@@ -282,7 +282,7 @@ function renderTrendChart(m){
   ]}}, options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',align:'end'},tooltip:{callbacks:{label:c=>' '+eurShort(c.raw)}}},scales:{
     x:{grid:{color:cssVar('--color-divider')}},
     y:{grid:{color:cssVar('--color-divider')},ticks:{callback:v=>eurShort(v)}}
-  }}});
+  }}};
 }
 
 // Filtri e reset
