@@ -1,0 +1,858 @@
+
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales & Profit Analytics Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+<style>
+/* ===== DESIGN TOKENS (stessi della prima dashboard) ===================== */
+:root, [data-theme="light"] {
+  --color-bg:              #f7f6f2;
+  --color-surface:         #f9f8f5;
+  --color-surface-2:       #fbfbf9;
+  --color-surface-offset:  #f0ede8;
+  --color-surface-dynamic: #e6e4df;
+  --color-divider:         #dcd9d5;
+  --color-border:          #d4d1ca;
+  --color-text:            #28251d;
+  --color-text-muted:      #6a6964;
+  --color-text-faint:      #b0afa9;
+  --color-primary:         #01696f;
+  --color-primary-hover:   #0c4e54;
+  --color-primary-light:   #cedcd8;
+  --color-orange:          #da7101;
+  --color-orange-light:    #e7d7c4;
+  --color-gold:            #b88a00;
+  --color-gold-light:      #e9e0c6;
+  --color-blue:            #006494;
+  --color-blue-light:      #c6d8e4;
+  --color-purple:          #7a39bb;
+  --color-purple-light:    #dacfde;
+  --color-success:         #437a22;
+  --color-error:           #a12c7b;
+  --shadow-sm: 0 1px 3px rgba(40,37,29,0.07);
+  --shadow-md: 0 4px 12px rgba(40,37,29,0.09);
+  --shadow-lg: 0 10px 30px rgba(40,37,29,0.12);
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.8125rem);
+  --text-sm: clamp(0.8125rem, 0.77rem + 0.3vw, 0.9375rem);
+  --text-base: clamp(0.9375rem, 0.89rem + 0.25vw, 1rem);
+  --text-lg: clamp(1.0625rem, 1rem + 0.3vw, 1.25rem);
+  --text-xl: clamp(1.25rem, 1.1rem + 0.7vw, 1.75rem);
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+  --space-12: 48px; --space-16: 64px;
+  --sidebar-w: 230px;
+  --header-h: 56px;
+  --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-theme="dark"] {
+  --color-bg:              #131210;
+  --color-surface:         #1a1917;
+  --color-surface-2:       #1f1e1c;
+  --color-surface-offset:  #252421;
+  --color-surface-dynamic: #2d2c29;
+  --color-divider:         #2e2d2a;
+  --color-border:          #383633;
+  --color-text:            #d8d7d4;
+  --color-text-muted:      #7a7976;
+  --color-text-faint:      #4e4d4a;
+  --color-primary:         #4f98a3;
+  --color-primary-hover:   #6bb5c0;
+  --color-primary-light:   #1e3135;
+  --color-orange:          #e8913a;
+  --color-orange-light:    #3a2d1e;
+  --color-gold:            #d4a832;
+  --color-gold-light:      #322a14;
+  --color-blue:            #5591c7;
+  --color-blue-light:      #192433;
+  --color-purple:          #a87be0;
+  --color-purple-light:    #261a3a;
+  --color-success:         #6daa45;
+  --color-error:           #d163a7;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+body{font-family:var(--font-body);font-size:var(--text-sm);color:var(--color-text);background:var(--color-bg);min-height:100dvh;line-height:1.55}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
+a,button{transition:color var(--transition),background var(--transition),border-color var(--transition),opacity var(--transition)}
+:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px;border-radius:var(--radius-sm)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+
+/* ===== LAYOUT ========================================================== */
+#app-shell{display:grid;grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:var(--header-h) 1fr;min-height:100dvh}
+#topbar{grid-column:1/-1;display:flex;align-items:center;gap:var(--space-4);padding:0 var(--space-6);background:var(--color-surface);border-bottom:1px solid var(--color-divider);height:var(--header-h);position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm)}
+#topbar .logo{display:flex;align-items:center;gap:var(--space-3);text-decoration:none;color:var(--color-text);font-weight:700;font-size:var(--text-base);letter-spacing:-0.01em;margin-right:var(--space-2)}
+#topbar .logo svg{color:var(--color-primary)}
+#topbar .logo span.sub{font-weight:400;color:var(--color-text-muted);font-size:var(--text-xs);margin-left:2px}
+#topbar .spacer{flex:1}
+#topbar .data-note{font-size:var(--text-xs);color:var(--color-text-faint);display:flex;align-items:center;gap:var(--space-2)}
+#topbar .data-note .dot{width:7px;height:7px;border-radius:50%;background:var(--color-success)}
+#theme-toggle{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-md);color:var(--color-text-muted);border:1px solid var(--color-border)}
+#theme-toggle:hover{background:var(--color-surface-offset);color:var(--color-text)}
+
+#sidebar{background:var(--color-surface);border-right:1px solid var(--color-divider);padding:var(--space-5) 0;display:flex;flex-direction:column;gap:var(--space-1);overflow-y:auto;position:sticky;top:var(--header-h);height:calc(100dvh - var(--header-h))}
+.nav-item{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-5);color:var(--color-text-muted);font-size:var(--text-sm);font-weight:500;text-align:left;width:100%;cursor:pointer;position:relative}
+.nav-item svg{width:16px;height:16px}
+.nav-item:hover{color:var(--color-text);background:var(--color-surface-offset)}
+.nav-item.active{color:var(--color-primary);background:var(--color-primary-light)}
+.nav-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--color-primary);border-radius:0 2px 2px 0}
+.nav-sep{height:1px;background:var(--color-divider);margin:var(--space-2) var(--space-4)}
+
+#main-content{overflow-y:auto;background:var(--color-bg)}
+
+/* ===== FILTER BAR ====================================================== */
+#filter-bar{background:var(--color-surface);border-bottom:1px solid var(--color-divider);padding:var(--space-3) var(--space-6);display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:flex-end;position:sticky;top:0;z-index:50}
+.filter-group{display:flex;flex-direction:column;gap:3px}
+.filter-group label{font-size:var(--text-xs);color:var(--color-text-muted);font-weight:500;letter-spacing:0.06em;text-transform:uppercase}
+.filter-group select{background:var(--color-surface-offset);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:5px var(--space-3);font-size:var(--text-sm);color:var(--color-text);min-width:130px;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7976' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+#btn-reset{margin-left:auto;background:none;border:1px solid var(--color-border);border-radius:var(--radius-md);padding:6px var(--space-4);font-size:var(--text-sm);color:var(--color-text-muted);font-weight:500;display:flex;align-items:center;gap:var(--space-2)}
+#btn-reset:hover{background:var(--color-surface-offset);color:var(--color-text);border-color:var(--color-primary)}
+#filter-summary{width:100%;font-size:var(--text-xs);color:var(--color-text-muted);padding-top:2px}
+#filter-summary span{color:var(--color-primary);font-weight:600}
+
+/* ===== SECTIONS & CARDS ================================================ */
+.page-section{display:none}
+.page-section.active{display:block}
+.section-inner{padding:var(--space-6)}
+.section-title{font-size:var(--text-xl);font-weight:700;letter-spacing:-0.02em;color:var(--color-text);margin-bottom:var(--space-6)}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:var(--space-4);margin-bottom:var(--space-6)}
+.kpi-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:var(--space-2)}
+.kpi-label{font-size:var(--text-xs);color:var(--color-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.08em}
+.kpi-value{font-size:var(--text-xl);font-weight:700;color:var(--color-text);font-variant-numeric:tabular-nums lining-nums;letter-spacing:-0.02em}
+.kpi-sub{font-size:var(--text-xs);color:var(--color-text-faint)}
+.kpi-bar-wrap{height:4px;background:var(--color-surface-offset);border-radius:2px;overflow:hidden;margin-top:3px}
+.kpi-bar-fill{height:100%;border-radius:2px;transition:width 0.8s cubic-bezier(0.16,1,0.3,1)}
+
+.card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);overflow:hidden}
+.card-header{padding:var(--space-4) var(--space-5);border-bottom:1px solid var(--color-divider);display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap}
+.card-title{font-size:var(--text-base);font-weight:700;color:var(--color-text)}
+.card-body{padding:var(--space-5)}
+.chart-wrap{position:relative;height:260px;width:100%}
+.chart-wrap-tall{position:relative;height:360px;width:100%}
+.chart-wrap-short{position:relative;height:190px;width:100%}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-5);margin-bottom:var(--space-5)}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-5);margin-bottom:var(--space-5)}
+.grid-1-2{display:grid;grid-template-columns:1fr 2fr;gap:var(--space-5);margin-bottom:var(--space-5)}
+.full-card{margin-bottom:var(--space-5)}
+
+.insight-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--space-3);margin-bottom:var(--space-5)}
+.insight-item{display:flex;gap:var(--space-3);align-items:flex-start;background:var(--color-surface-offset);border-radius:var(--radius-md);border:1px solid var(--color-border);padding:var(--space-3) var(--space-4)}
+.insight-icon{font-size:18px;margin-top:1px}
+.insight-text{font-size:var(--text-xs);color:var(--color-text-muted);line-height:1.5}
+.insight-text strong{color:var(--color-text);font-weight:600}
+
+/* TABLE & RANKING */
+.data-table-wrap{overflow-x:auto}
+.data-table{font-size:var(--text-xs);width:100%;border-collapse:collapse}
+.data-table th{padding:var(--space-2) var(--space-3);text-align:left;font-weight:600;color:var(--color-text-muted);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.04em;background:var(--color-surface-offset);border-bottom:2px solid var(--color-divider);white-space:nowrap;cursor:pointer}
+.data-table td{padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--color-divider);font-variant-numeric:tabular-nums;color:var(--color-text)}
+.data-table tbody tr:hover{background:var(--color-surface-offset)}
+.num{text-align:right}
+.rank-table{display:flex;flex-direction:column;gap:2px}
+.rank-row{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm)}
+.rank-row:hover{background:var(--color-surface-offset)}
+.rank-num{font-size:var(--text-xs);font-weight:700;color:var(--color-text-muted);min-width:20px}
+.rank-label{flex:1;font-size:var(--text-sm);font-weight:500}
+.rank-bar-col{flex:2}
+.rank-bar-bg{height:6px;background:var(--color-surface-dynamic);border-radius:3px;overflow:hidden}
+.rank-bar-fg{height:100%;background:var(--color-primary);border-radius:3px;transition:width 0.7s cubic-bezier(0.16,1,0.3,1)}
+.rank-val{font-size:var(--text-xs);font-weight:600;min-width:80px;text-align:right;font-variant-numeric:tabular-nums}
+
+.toggle-group{display:flex;border:1px solid var(--color-border);border-radius:var(--radius-md);overflow:hidden}
+.toggle-btn{padding:5px 14px;font-size:var(--text-xs);font-weight:600;color:var(--color-text-muted)}
+.toggle-btn.active{background:var(--color-primary);color:#fff}
+
+/* LOADING & ERROR */
+#loading-screen{position:fixed;inset:0;background:var(--color-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-5);z-index:999}
+.spinner{width:44px;height:44px;border:3px solid var(--color-border);border-top-color:var(--color-primary);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-label{font-size:var(--text-sm);color:var(--color-text-muted)}
+#error-screen{display:none;position:fixed;inset:0;background:var(--color-bg);flex-direction:column;align-items:center;justify-content:center;gap:var(--space-4);z-index:998;padding:var(--space-8)}
+
+/* MOBILE */
+#mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--color-surface);border-top:1px solid var(--color-divider);padding:var(--space-2) var(--space-4);justify-content:space-around;z-index:100}
+.mob-nav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:var(--space-2);color:var(--color-text-muted);font-size:10px}
+.mob-nav-btn.active{color:var(--color-primary)}
+.mob-nav-btn svg{width:20px;height:20px}
+
+@media(max-width:900px){
+  :root{--sidebar-w:0px}
+  #sidebar{display:none}
+  #app-shell{grid-template-columns:1fr}
+  #mobile-nav{display:flex}
+  .grid-2,.grid-3,.grid-1-2{grid-template-columns:1fr}
+  #main-content{padding-bottom:64px}
+}
+</style>
+</head>
+<body>
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-label">Caricamento dati vendite e marginalità…</div>
+  <div style="font-size:var(--text-xs);color:var(--color-text-faint);margin-top:-8px;">Fonte: CSV remoto configurato in DATA_URL</div>
+</div>
+<div id="error-screen">
+  <div style="font-size:40px;">⚠️</div>
+  <div style="font-size:var(--text-xl);font-weight:700;">Errore nel caricamento dati</div>
+  <div id="error-msg-text" style="font-size:var(--text-sm);color:var(--color-text-muted);text-align:center;max-width:460px;">Impossibile caricare il CSV. Controlla la connessione o l'URL configurato.</div>
+  <div id="error-url-text" style="font-size:var(--text-xs);background:var(--color-surface-offset);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);color:var(--color-primary);font-family:monospace;word-break:break-all;max-width:560px;"></div>
+  <button onclick="loadData()" style="margin-top:8px;background:var(--color-primary);color:#fff;padding:10px 28px;border-radius:var(--radius-md);font-weight:600;font-size:var(--text-sm);">Riprova</button>
+</div>
+
+<div id="app-shell" style="display:none;">
+  <header id="topbar">
+    <div class="logo">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-label="Logo">
+        <rect width="26" height="26" rx="6" fill="currentColor" opacity="0.12"/>
+        <rect x="4" y="14" width="4" height="8" rx="1" fill="currentColor"/>
+        <rect x="11" y="9" width="4" height="13" rx="1" fill="currentColor"/>
+        <rect x="18" y="5" width="4" height="17" rx="1" fill="currentColor"/>
+        <polyline points="5,13 12,7 19,4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span>CarKPI<span class="sub">Sales & Profit</span></span>
+    </div>
+    <div class="spacer"></div>
+    <div class="data-note"><span class="dot"></span><span id="data-note-txt">Caricamento…</span></div>
+    <button id="theme-toggle" aria-label="Cambia tema" data-theme-toggle></button>
+  </header>
+
+  <nav id="sidebar" aria-label="Sezioni dashboard">
+    <button class="nav-item active" data-section="overview">Overview</button>
+    <button class="nav-item" data-section="filiali">Performance Filiali</button>
+    <button class="nav-item" data-section="venditori">Venditori</button>
+    <button class="nav-item" data-section="servizi">Fin & Servizi</button>
+    <button class="nav-item" data-section="stock">Stock & Prodotto</button>
+    <button class="nav-item" data-section="brand">Brand Mix</button>
+    <div class="nav-sep"></div>
+    <button class="nav-item" data-section="dettaglio">Dettaglio Tabellare</button>
+  </nav>
+
+  <main id="main-content">
+    <div id="filter-bar">
+      <div class="filter-group"><label for="f-anno">Anno</label><select id="f-anno"><option value="">Tutti</option></select></div>
+      <div class="filter-group"><label for="f-quarter">Trim.</label><select id="f-quarter"><option value="">Tutti</option></select></div>
+      <div class="filter-group"><label for="f-month">Mese</label><select id="f-month"><option value="">Tutti</option></select></div>
+      <div class="filter-group"><label for="f-marca">Marca</label><select id="f-marca"><option value="">Tutte</option></select></div>
+      <div class="filter-group"><label for="f-filiale">Filiale</label><select id="f-filiale"><option value="">Tutte</option></select></div>
+      <div class="filter-group"><label for="f-venditore">Venditore</label><select id="f-venditore"><option value="">Tutti</option></select></div>
+      <div class="filter-group"><label for="f-canale">Canale</label><select id="f-canale"><option value="">Tutti</option></select></div>
+      <div class="filter-group"><label for="f-cat">Categoria</label><select id="f-cat"><option value="">Tutte</option></select></div>
+      <button id="btn-reset">Reset</button>
+      <div id="filter-summary"></div>
+    </div>
+
+    <section id="sec-overview" class="page-section active">
+      <div class="section-inner">
+        <div class="section-title">📊 Overview</div>
+        <div id="kpi-grid" class="kpi-grid"></div>
+        <div id="insights-overview" class="insight-grid"></div>
+        <div class="full-card">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Trend mensile — Fatturato, Margine & Pratiche</span></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chart-trend"></canvas></div></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><div class="card-header"><span class="card-title">Mix Categoria Prodotto</span></div><div class="card-body"><div class="chart-wrap-short"><canvas id="chart-cat"></canvas></div></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">Mix Canale di Vendita</span></div><div class="card-body"><div class="chart-wrap-short"><canvas id="chart-canale"></canvas></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-filiali" class="page-section">
+      <div class="section-inner">
+        <div class="section-title">🏢 Performance Filiali</div>
+        <div class="grid-3">
+          <div class="card"><div class="card-header"><span class="card-title">Ranking per Pratiche</span></div><div class="card-body"><div id="rank-fil-pratiche" class="rank-table"></div></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">Ranking per Fatturato</span></div><div class="card-body"><div id="rank-fil-fatt" class="rank-table"></div></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">Ranking per Margine Totale</span></div><div class="card-body"><div id="rank-fil-marg" class="rank-table"></div></div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><div class="card-header"><span class="card-title">Tasso Finanziamento per Filiale</span></div><div class="card-body"><div class="chart-wrap-tall"><canvas id="chart-fil-fin"></canvas></div></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">Ticket Medio & Margine Medio per Filiale</span></div><div class="card-body"><div class="chart-wrap-tall"><canvas id="chart-fil-ticket-marg"></canvas></div></div></div>
+        </div>
+        <div id="insights-filiali" class="insight-grid"></div>
+      </div>
+    </section>
+
+    <section id="sec-venditori" class="page-section">
+      <div class="section-inner">
+        <div class="section-title">🧑‍💼 Venditori</div>
+        <div class="grid-3">
+          <div class="card"><div class="card-header"><span class="card-title">Top Venditori per Pratiche</span></div><div class="card-body"><div id="rank-vend-pratiche" class="rank-table"></div></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">Top Venditori per Margine Totale</span></div><div class="card-body"><div id="rank-vend-marg" class="rank-table"></div></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">Sconto & Margine Medio per Venditore</span></div><div class="card-body"><div class="chart-wrap-short"><canvas id="chart-vend-sconto-marg"></canvas></div></div></div>
+        </div>
+        <div class="full-card">
+          <div class="card"><div class="card-header"><span class="card-title">Penetrazione Servizi per Venditore (top)</span></div><div class="card-body"><div class="chart-wrap-tall"><canvas id="chart-vend-servizi"></canvas></div></div></div>
+        </div>
+        <div id="insights-venditori" class="insight-grid"></div>
+      </div>
+    </section>
+
+    <section id="sec-servizi" class="page-section">
+      <div class="section-inner">
+        <div class="section-title">🏦 Finanziamenti & Servizi</div>
+        <div class="grid-3">
+          <div class="card"><div class="card-header"><span class="card-title">Penetrazione Finanziamento</span></div><div class="card-body"><div class="chart-wrap-short"><canvas id="chart-pen-fin"></canvas></div></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">Pack Assicurativo</span></div><div class="card-body"><div class="chart-wrap-short"><canvas id="chart-pen-ass"></canvas></div></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">Estensione Garanzia</span></div><div class="card-body"><div class="chart-wrap-short"><canvas id="chart-pen-gar"></canvas></div></div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><div class="card-header"><span class="card-title">Mix Tipo Prodotto Finanziario</span></div><div class="card-body"><div class="chart-wrap"><canvas id="chart-tipo-fi"></canvas></div></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">Mix Istituto Finanziario</span></div><div class="card-body"><div class="chart-wrap"><canvas id="chart-istituto"></canvas></div></div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><div class="card-header"><span class="card-title">Durata Media Finanziamenti</span></div><div class="card-body"><div class="chart-wrap-short"><canvas id="chart-durata"></canvas></div></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">Split Margine Ferro vs Servizi</span></div><div class="card-body"><div class="chart-wrap-short"><canvas id="chart-marg-split"></canvas></div></div></div>
+        </div>
+        <div id="insights-servizi" class="insight-grid"></div>
+      </div>
+    </section>
+
+    <section id="sec-stock" class="page-section">
+      <div class="section-inner">
+        <div class="section-title">🚗 Stock & Prodotto</div>
+        <div class="grid-2">
+          <div class="card"><div class="card-header"><span class="card-title">Giacenza per Fascia Giorni</span></div><div class="card-body"><div class="chart-wrap-short"><canvas id="chart-giac-fascia"></canvas></div></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">% Veicoli Over 150gg in Giacenza</span></div><div class="card-body"><div class="chart-wrap-short"><canvas id="chart-over150"></canvas></div></div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><div class="card-header"><span class="card-title">Anzianità Media Veicoli (mesi)</span></div><div class="card-body"><div class="chart-wrap-short"><canvas id="chart-anzianita"></canvas></div></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">KM Medi alla Vendita</span></div><div class="card-body"><div class="chart-wrap-short"><canvas id="chart-km"></canvas></div></div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><div class="card-header"><span class="card-title">Mix Fascia Prezzo</span></div><div class="card-body"><div class="chart-wrap-short"><canvas id="chart-fascia-prezzo"></canvas></div></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">Categoria Prodotto per Fascia Prezzo</span></div><div class="card-body"><div class="chart-wrap"><canvas id="chart-cat-prezzo"></canvas></div></div></div>
+        </div>
+        <div id="insights-stock" class="insight-grid"></div>
+      </div>
+    </section>
+
+    <section id="sec-brand" class="page-section">
+      <div class="section-inner">
+        <div class="section-title">🏷️ Brand Mix</div>
+        <div class="full-card">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Mix Brand per Filiale (100% stacked)</span><div class="toggle-group"><button class="toggle-btn active" id="toggle-volumi" onclick="setBrandToggle('volumi')">Volumi</button><button class="toggle-btn" id="toggle-fatturato" onclick="setBrandToggle('fatturato')">Fatturato</button></div></div>
+            <div class="card-body"><div class="chart-wrap-tall"><canvas id="chart-brand-stacked"></canvas></div></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><div class="card-header"><span class="card-title">Quota di Mercato Marche (volumi)</span></div><div class="card-body"><div class="chart-wrap"><canvas id="chart-brand-donut"></canvas></div></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">Fatturato per Marca</span></div><div class="card-body"><div class="chart-wrap"><canvas id="chart-brand-rev"></canvas></div></div></div>
+        </div>
+        <div id="insights-brand" class="insight-grid"></div>
+      </div>
+    </section>
+
+    <section id="sec-dettaglio" class="page-section">
+      <div class="section-inner">
+        <div class="section-title">📋 Dettaglio Tabellare per Filiale</div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Metriche aggregate per filiale</span></div>
+          <div class="data-table-wrap">
+            <table class="data-table" id="detail-table">
+              <thead><tr>
+                <th data-sort="filiale">Filiale</th>
+                <th class="num" data-sort="n">Pratiche</th>
+                <th class="num" data-sort="fatt">Fatturato</th>
+                <th class="num" data-sort="marg">Margine Totale</th>
+                <th class="num" data-sort="ticket">Ticket Medio</th>
+                <th class="num" data-sort="marg_pratica">Margine Medio</th>
+                <th class="num" data-sort="marg_pct">% Margine/Fatt</th>
+                <th class="num" data-sort="fin_rate">% Fin</th>
+                <th class="num" data-sort="ass_rate">% Assic</th>
+                <th class="num" data-sort="gar_rate">% Gar</th>
+                <th class="num" data-sort="sconto">Sconto Medio</th>
+              </tr></thead>
+              <tbody id="detail-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<nav id="mobile-nav">
+  <button class="mob-nav-btn active" data-section="overview">Overview</button>
+  <button class="mob-nav-btn" data-section="filiali">Filiali</button>
+  <button class="mob-nav-btn" data-section="venditori">Vend.</button>
+  <button class="mob-nav-btn" data-section="servizi">Servizi</button>
+  <button class="mob-nav-btn" data-section="dettaglio">Dati</button>
+</nav>
+
+<script>
+const DATA_URL = "./dataset_kpi_definitivo_2024_2025_50000.csv";
+let rawData = [], filtered = [];
+let charts = {}; let brandToggle = 'volumi';
+const MESI_IT = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+
+// THEME
+(function(){
+  const t=document.querySelector('[data-theme-toggle]');
+  const r=document.documentElement;
+  function icon(mode){t.innerHTML=mode==='dark'?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'}
+  let m=r.getAttribute('data-theme')||'dark'; icon(m);
+  t.addEventListener('click',()=>{m=m==='dark'?'light':'dark';r.setAttribute('data-theme',m);icon(m);if(filtered.length) renderAll();});
+})();
+
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function palette(){return[cssVar('--color-primary'),cssVar('--color-orange'),cssVar('--color-gold'),cssVar('--color-blue'),cssVar('--color-purple'),cssVar('--color-success'),cssVar('--color-error')];}
+function applyChartDefaults(){
+  Chart.defaults.font.family="'Inter', system-ui, sans-serif";
+  Chart.defaults.font.size=11;
+  Chart.defaults.color=cssVar('--color-text-muted');
+}
+
+async function loadData(){
+  document.getElementById('loading-screen').style.display='flex';
+  document.getElementById('error-screen').style.display='none';
+  document.getElementById('app-shell').style.display='none';
+  try{
+    const resp=await fetch(DATA_URL); if(!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+    const text=await resp.text();
+    const parsed=Papa.parse(text,{header:true,skipEmptyLines:true});
+    rawData=[];
+    for(const row of parsed.data){
+      try{
+        if(!row.data||row.data==='data') continue;
+        const d=new Date(row.data); if(isNaN(d.getTime())) continue;
+        const fatt=parseFloat(row.importo_fattura); if(!fatt||fatt<=0) continue;
+        const marg_serv=parseFloat(row.margine_servizi_eur)||0;
+        const marg_ferro=parseFloat(row.margine_ferro_eur)||0;
+        const marg_tot=parseFloat(row.margine_totale_eur)||marg_serv+marg_ferro;
+        const sconto=parseFloat(row.sconto_applicato_eur)||0;
+        const impFin=parseFloat(row.importo_finanziato)||0;
+        const finFlag=(row.finanziamento||'').trim().toUpperCase()==='SI';
+        const assFlag=(row.pacchetto_assicurativo||'').trim().toUpperCase()==='SI';
+        const garFlag=(row.estensione_garanzia||'').trim().toUpperCase()==='SI';
+        const anno=parseInt(row.anno)||d.getFullYear();
+        const mese=d.getMonth()+1;
+        rawData.push({
+          date:d, anno, mese,
+          meseAnno:`${anno}-${String(mese).padStart(2,'0')}`,
+          id_pratica:row.id_pratica, id_cliente:row.id_cliente,
+          filiale:(row.filiale||'').trim(),
+          filiale_brand:row.filiale_brand_prevalente||'',
+          venditore:(row.venditore||'').trim(), venditore_brand:row.venditore_brand_prevalente||'',
+          categoria:(row.categoria_prodotto||'').trim(),
+          data_imm:row.data_prima_immatricolazione||'',
+          anz_mesi:parseFloat(row.anzianita_mesi)||0,
+          km:parseFloat(row.km_attuali)||0,
+          canale:(row.canale||'').trim(),
+          giac_giorni:parseFloat(row.giacenza_giorni)||0,
+          giac_fascia:(row.giacenza_fascia||'').trim(),
+          over150:(row.over150_flag||'').trim().toUpperCase()==='SI',
+          fascia_prezzo:(row.fascia_prezzo||'').trim(),
+          sconto,
+          marca:(row.marca||'').trim(),
+          modello:row.modello||'',
+          importo:fatt,
+          finanziamento:finFlag,
+          tipo_fi:(row.tipo_prodotto_fi||'').trim(),
+          istituto:(row.istituto_finanziario||'').trim(),
+          durata_mesi:parseFloat(row.durata_mesi)||0,
+          importo_fin:impFin,
+          tipo_cliente:(row.tipo_cliente||'').trim(),
+          assFlag, garFlag,
+          marg_serv, marg_ferro, marg_tot
+        });
+      }catch(e){}
+    }
+    if(!rawData.length) throw new Error('Nessuna riga valida trovata nel CSV');
+    populateFilters();
+    applyFilters();
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('app-shell').style.display='grid';
+    document.getElementById('data-note-txt').textContent=`${rawData.length.toLocaleString('it')} pratiche · 2024–2025`;
+  }catch(e){
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('error-screen').style.display='flex';
+    document.getElementById('error-msg-text').textContent=e.message||'Errore sconosciuto';
+    document.getElementById('error-url-text').textContent='DATA_URL: '+DATA_URL;
+  }
+}
+
+function populateFilters(){
+  function uniq(arr){return [...new Set(arr)].filter(Boolean).sort();}
+  const anni=uniq(rawData.map(r=>r.anno));
+  const marche=uniq(rawData.map(r=>r.marca));
+  const filiali=uniq(rawData.map(r=>r.filiale));
+  const vend=uniq(rawData.map(r=>r.venditore));
+  const canali=uniq(rawData.map(r=>r.canale));
+  const cat=uniq(rawData.map(r=>r.categoria));
+  fillSel('f-anno', anni);
+  fillSel('f-quarter', [1,2,3,4].map(q=>({value:q,label:'Q'+q})));
+  fillSel('f-month', MESI_IT.map((m,i)=>({value:i+1,label:m})));
+  fillSel('f-marca', marche);
+  fillSel('f-filiale', filiali);
+  fillSel('f-venditore', vend);
+  fillSel('f-canale', canali);
+  fillSel('f-cat', cat);
+}
+function fillSel(id, items){
+  const sel=document.getElementById(id); const first=sel.options[0]; sel.innerHTML=''; sel.appendChild(first);
+  for(const it of items){
+    const opt=document.createElement('option');
+    if(typeof it==='object'){opt.value=it.value;opt.textContent=it.label;} else {opt.value=it;opt.textContent=it;}
+    sel.appendChild(opt);
+  }
+}
+
+function applyFilters(){
+  const a=document.getElementById('f-anno').value;
+  const q=document.getElementById('f-quarter').value;
+  const m=document.getElementById('f-month').value;
+  const marca=document.getElementById('f-marca').value;
+  const fil=document.getElementById('f-filiale').value;
+  const vend=document.getElementById('f-venditore').value;
+  const can=document.getElementById('f-canale').value;
+  const cat=document.getElementById('f-cat').value;
+  filtered=rawData.filter(r=>
+    (!a || r.anno==a) &&
+    (!q || (Math.ceil(r.mese/3)==q)) &&
+    (!m || r.mese==m) &&
+    (!marca || r.marca===marca) &&
+    (!fil || r.filiale===fil) &&
+    (!vend || r.venditore===vend) &&
+    (!can || r.canale===can) &&
+    (!cat || r.categoria===cat)
+  );
+  const parts=[];
+  if(a) parts.push(`Anno: <span>${a}</span>`);
+  if(q) parts.push(`Trim: <span>Q${q}</span>`);
+  if(m) parts.push(`Mese: <span>${MESI_IT[m-1]}</span>`);
+  if(marca) parts.push(`Marca: <span>${marca}</span>`);
+  if(fil) parts.push(`Filiale: <span>${fil}</span>`);
+  if(vend) parts.push(`Vend: <span>${vend}</span>`);
+  if(can) parts.push(`Canale: <span>${can}</span>`);
+  if(cat) parts.push(`Cat: <span>${cat}</span>`);
+  const base=`<span>${filtered.length.toLocaleString('it')}</span> pratiche (${((filtered.length/rawData.length)*100).toFixed(1)}% del totale)`;
+  document.getElementById('filter-summary').innerHTML=parts.length?base+' · '+parts.join(' · '):base;
+  renderAll();
+}
+
+function numShort(v){
+  const a=Math.abs(v);
+  if(a>=1_000_000) return (v/1_000_000).toFixed(1).replace('.',',')+'M';
+  if(a>=10_000) return (v/1_000).toFixed(1).replace('.',',')+'K';
+  return v.toLocaleString('it-IT');
+}
+function eurShort(v){return '€ '+numShort(v);}
+
+function metrics(data){
+  const n=data.length; if(!n) return null;
+  let fatt=0,marg=0,margF=0,margS=0,impFin=0,sconto=0;
+  let finN=0,assN=0,garN=0,over150=0;
+  let anz=0,km=0,giac=0;
+  for(const r of data){
+    fatt+=r.importo; marg+=r.marg_tot; margF+=r.marg_ferro; margS+=r.marg_serv;
+    sconto+=r.sconto; anz+=r.anz_mesi; km+=r.km; giac+=r.giac_giorni;
+    if(r.finanziamento){finN++; impFin+=r.importo_fin;}
+    if(r.assFlag) assN++;
+    if(r.garFlag) garN++;
+    if(r.over150) over150++;
+  }
+  return{
+    n,fatt,marg,margF,margS,impFin,scontoAvg:sconto/n,
+    ticket:fatt/n,margPratica:marg/n,margPct:marg/fatt,
+    finRate:finN/n,assRate:assN/n,garRate:garN/n,
+    over150Rate:over150/n,anzAvg:anz/n,kmAvg:km/n,giacAvg:giac/n
+  };
+}
+function groupBy(data,key){
+  const map={};
+  for(const r of data){const k=r[key]; if(!k) continue; (map[k]||(map[k]=[])).push(r);} 
+  return Object.entries(map).map(([name,rows])=>({name,rows,...metrics(rows)}));
+}
+
+function renderAll(){
+  applyChartDefaults();
+  if(!filtered.length){document.getElementById('kpi-grid').innerHTML='<div style="color:var(--color-text-muted);padding:16px;">Nessun dato per i filtri selezionati.</div>';return;}
+  const m=metrics(filtered);
+  renderKPIs(m);
+  renderTrend();
+  renderOverviewCharts();
+  renderFiliali();
+  renderVenditori();
+  renderServizi(m);
+  renderStock(m);
+  renderBrand();
+  renderTable();
+  renderInsights(m);
+}
+
+function renderKPIs(m){
+  const el=document.getElementById('kpi-grid');
+  const cards=[
+    {lbl:'Pratiche',val:m.n.toLocaleString('it'),sub:'nel periodo filtrato'},
+    {lbl:'Fatturato',val:eurShort(m.fatt),sub:'somma importi fattura'},
+    {lbl:'Margine Totale',val:eurShort(m.marg),sub:'margine ferro + servizi'},
+    {lbl:'% Margine/Fatt',val:(m.margPct*100).toFixed(1)+'%',sub:'redditività media'},
+    {lbl:'Ticket Medio',val:eurShort(m.ticket),sub:'fatturato per pratica'},
+    {lbl:'Margine Medio',val:eurShort(m.margPratica),sub:'per pratica'},
+    {lbl:'Tasso Finanziamento',val:(m.finRate*100).toFixed(1)+'%',sub:`${(m.impFin?eurShort(m.impFin/m.finRate/m.n):'')} medio finanziato`,bar:m.finRate},
+    {lbl:'Pen. Assicurazioni',val:(m.assRate*100).toFixed(1)+'%',sub:`${(m.assRate*m.n).toFixed(0)} pratiche`,bar:m.assRate},
+    {lbl:'Pen. Est. Garanzia',val:(m.garRate*100).toFixed(1)+'%',sub:`${(m.garRate*m.n).toFixed(0)} pratiche`,bar:m.garRate},
+    {lbl:'Sconto Medio',val:eurShort(m.scontoAvg),sub:'per pratica'}
+  ];
+  el.innerHTML=cards.map(c=>`<div class="kpi-card"><div class="kpi-label">${c.lbl}</div><div class="kpi-value">${c.val}</div><div class="kpi-sub">${c.sub||''}</div>${c.bar!=null?`<div class="kpi-bar-wrap"><div class="kpi-bar-fill" style="width:${(c.bar*100).toFixed(1)}%;background:var(--color-primary);"></div></div>`:''}</div>`).join('');
+}
+
+function destroy(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+function renderTrend(){
+  const by={};
+  for(const r of filtered){
+    const k=r.meseAnno; if(!by[k]) by[k]={fatt:0,marg:0,n:0};
+    by[k].fatt+=r.importo; by[k].marg+=r.marg_tot; by[k].n++;
+  }
+  const entries=Object.entries(by).sort((a,b)=>a[0].localeCompare(b[0]));
+  const labels=entries.map(([k])=>{const[y,m]=k.split('-');return MESI_IT[+m-1]+' '+y;});
+  const fatt=entries.map(([,v])=>v.fatt);
+  const marg=entries.map(([,v])=>v.marg);
+  const n=entries.map(([,v])=>v.n);
+  destroy('chart-trend');
+  const ctx=document.getElementById('chart-trend').getContext('2d');
+  const pal=palette();
+  charts['chart-trend']=new Chart(ctx,{type:'line',data:{labels,datasets:[
+    {label:'Fatturato',data:fatt,borderColor:pal[0],backgroundColor:pal[0]+'22',fill:true,tension:.35,yAxisID:'y'},
+    {label:'Margine',data:marg,borderColor:pal[2],backgroundColor:pal[2]+'22',fill:true,tension:.35,yAxisID:'y'},
+    {label:'Pratiche',data:n,borderColor:pal[1],backgroundColor:'transparent',fill:false,tension:.35,yAxisID:'y1',borderDash:[4,3]}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',align:'end'},tooltip:{callbacks:{label:c=>{
+    if(c.dataset.label==='Pratiche') return ' '+c.raw.toLocaleString('it')+' pratiche';
+    return ' '+eurShort(c.raw);
+  }}}},scales:{
+    x:{grid:{color:cssVar('--color-divider')}},
+    y:{grid:{color:cssVar('--color-divider')},ticks:{callback:v=>eurShort(v)}},
+    y1:{position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>v.toLocaleString('it')}}
+  }}});
+}
+
+function renderOverviewCharts(){
+  const pal=palette();
+  const byCat=groupBy(filtered,'categoria');
+  destroy('chart-cat');
+  charts['chart-cat']=new Chart(document.getElementById('chart-cat').getContext('2d'),{
+    type:'doughnut',data:{labels:byCat.map(r=>r.name),datasets:[{data:byCat.map(r=>r.n),backgroundColor:pal,borderWidth:2,borderColor:cssVar('--color-surface')}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right'},tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw} (${(c.raw/filtered.length*100).toFixed(1)}%)`}}}}
+  });
+  const byCan=groupBy(filtered,'canale');
+  destroy('chart-canale');
+  charts['chart-canale']=new Chart(document.getElementById('chart-canale').getContext('2d'),{
+    type:'doughnut',data:{labels:byCan.map(r=>r.name),datasets:[{data:byCan.map(r=>r.n),backgroundColor:pal,borderWidth:2,borderColor:cssVar('--color-surface')}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right'},tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw} (${(c.raw/filtered.length*100).toFixed(1)}%)`}}}}
+  });
+}
+
+function rankTable(id,data,valFn,labelFn,color){
+  const max=Math.max(...data.map(valFn));
+  document.getElementById(id).innerHTML=data.map((r,i)=>`<div class="rank-row"><span class="rank-num">${i+1}</span><span class="rank-label">${r.name}</span><span class="rank-bar-col"><div class="rank-bar-bg"><div class="rank-bar-fg" style="width:${(valFn(r)/max*100).toFixed(1)}%;background:${color}"></div></div></span><span class="rank-val">${labelFn(r)}</span></div>`).join('');
+}
+
+function renderFiliali(){
+  const g=groupBy(filtered,'filiale');
+  const pal=palette();
+  const byPratiche=[...g].sort((a,b)=>b.n-a.n);
+  const byFatt=[...g].sort((a,b)=>b.fatt-a.fatt);
+  const byMarg=[...g].sort((a,b)=>b.marg-a.marg);
+  rankTable('rank-fil-pratiche',byPratiche,r=>r.n,r=>r.n.toLocaleString('it'),pal[0]);
+  rankTable('rank-fil-fatt',byFatt,r=>r.fatt,r=>eurShort(r.fatt),pal[1]);
+  rankTable('rank-fil-marg',byMarg,r=>r.marg,r=>eurShort(r.marg),pal[2]);
+  destroy('chart-fil-fin');
+  charts['chart-fil-fin']=new Chart(document.getElementById('chart-fil-fin').getContext('2d'),{
+    type:'bar',data:{labels:g.map(r=>r.name),datasets:[{label:'Tasso Finanziamento',data:g.map(r=>(r.finRate*100).toFixed(1)),backgroundColor:pal[0],borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%'}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.raw+'%'}}}}
+  });
+  destroy('chart-fil-ticket-marg');
+  charts['chart-fil-ticket-marg']=new Chart(document.getElementById('chart-fil-ticket-marg').getContext('2d'),{
+    type:'bar',data:{labels:g.map(r=>r.name),datasets:[
+      {label:'Ticket Medio',data:g.map(r=>r.ticket),backgroundColor:pal[1],borderRadius:3,yAxisID:'y'},
+      {label:'Margine Medio',data:g.map(r=>r.margPratica),backgroundColor:pal[2],borderRadius:3,yAxisID:'y'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index'},plugins:{tooltip:{callbacks:{label:c=>' '+eurShort(c.raw)}}},scales:{y:{ticks:{callback:v=>eurShort(v)}},x:{}}}
+  });
+}
+
+function renderVenditori(){
+  const g=groupBy(filtered,'venditore');
+  const pal=palette();
+  const topN=15;
+  const byPr=[...g].sort((a,b)=>b.n-a.n).slice(0,topN);
+  const byMarg=[...g].sort((a,b)=>b.marg-a.marg).slice(0,topN);
+  rankTable('rank-vend-pratiche',byPr,r=>r.n,r=>r.n.toLocaleString('it'),pal[0]);
+  rankTable('rank-vend-marg',byMarg,r=>r.marg,r=>eurShort(r.marg),pal[2]);
+  destroy('chart-vend-sconto-marg');
+  const sorted=[...g].sort((a,b)=>b.scontoAvg-a.scontoAvg).slice(0,topN);
+  charts['chart-vend-sconto-marg']=new Chart(document.getElementById('chart-vend-sconto-marg').getContext('2d'),{
+    type:'bar',data:{labels:sorted.map(r=>r.name),datasets:[
+      {label:'Sconto Medio',data:sorted.map(r=>r.scontoAvg),backgroundColor:pal[1],borderRadius:3},
+      {label:'Margine Medio',data:sorted.map(r=>r.margPratica),backgroundColor:pal[2],borderRadius:3}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>' '+eurShort(c.raw)}}},scales:{y:{ticks:{callback:v=>eurShort(v)}}}}
+  });
+  destroy('chart-vend-servizi');
+  charts['chart-vend-servizi']=new Chart(document.getElementById('chart-vend-servizi').getContext('2d'),{
+    type:'bar',data:{labels:byPr.map(r=>r.name),datasets:[
+      {label:'% Fin',data:byPr.map(r=>(r.finRate*100).toFixed(1)),backgroundColor:pal[0]},
+      {label:'% Assic',data:byPr.map(r=>(r.assRate*100).toFixed(1)),backgroundColor:pal[3]},
+      {label:'% Gar',data:byPr.map(r=>(r.garRate*100).toFixed(1)),backgroundColor:pal[4]}
+    ]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%'}}}}
+  });
+}
+
+function renderServizi(m){
+  const pal=palette();
+  function donut(id,rate,label,color){
+    destroy(id);
+    const pct=(rate*100).toFixed(1);
+    charts[id]=new Chart(document.getElementById(id).getContext('2d'),{
+      type:'doughnut',data:{labels:[label+' SI',label+' NO'],datasets:[{data:[pct,100-pct],backgroundColor:[color,cssVar('--color-surface-dynamic')],borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw}%`}}}},
+      plugins:[{id:'center',afterDraw(ch){const{ctx,chartArea:{left,right,top,bottom}}=ch;const cx=(left+right)/2,cy=(top+bottom)/2;ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 20px Inter';ctx.fillStyle=color;ctx.fillText(pct+'%',cx,cy-6);ctx.font='11px Inter';ctx.fillStyle=cssVar('--color-text-muted');ctx.fillText(label,cx,cy+14);ctx.restore();}}]
+    });
+  }
+  donut('chart-pen-fin',m.finRate,'Finanz.',pal[0]);
+  donut('chart-pen-ass',m.assRate,'Assic.',pal[3]);
+  donut('chart-pen-gar',m.garRate,'Garanzia',pal[4]);
+  const byTipo=groupBy(filtered,'tipo_fi');
+  destroy('chart-tipo-fi');
+  charts['chart-tipo-fi']=new Chart(document.getElementById('chart-tipo-fi').getContext('2d'),{
+    type:'bar',data:{labels:byTipo.map(r=>r.name),datasets:[{data:byTipo.map(r=>r.n),backgroundColor:pal,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.raw+' pratiche'}}}}
+  });
+  const byIst=groupBy(filtered,'istituto');
+  destroy('chart-istituto');
+  charts['chart-istituto']=new Chart(document.getElementById('chart-istituto').getContext('2d'),{
+    type:'bar',data:{labels:byIst.map(r=>r.name),datasets:[{data:byIst.map(r=>r.n),backgroundColor:pal,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}}
+  });
+  const dur=groupBy(filtered,'durata_mesi').filter(r=>r.name&&r.name!=='0');
+  destroy('chart-durata');
+  charts['chart-durata']=new Chart(document.getElementById('chart-durata').getContext('2d'),{
+    type:'bar',data:{labels:dur.map(r=>r.name+' mesi'),datasets:[{data:dur.map(r=>r.n),backgroundColor:pal[1],borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}}
+  });
+  destroy('chart-marg-split');
+  charts['chart-marg-split']=new Chart(document.getElementById('chart-marg-split').getContext('2d'),{
+    type:'doughnut',data:{labels:['Margine Ferro','Margine Servizi'],datasets:[{data:[m.margF,m.margS],backgroundColor:[pal[2],pal[3]],borderWidth:2,borderColor:cssVar('--color-surface')} ]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>`${c.label}: ${eurShort(c.raw)} (${(c.raw/(m.margF+m.margS)*100).toFixed(1)}%)`}}}}});
+}
+
+function renderStock(m){
+  const pal=palette();
+  const byFascia=groupBy(filtered,'giac_fascia');
+  destroy('chart-giac-fascia');
+  charts['chart-giac-fascia']=new Chart(document.getElementById('chart-giac-fascia').getContext('2d'),{
+    type:'bar',data:{labels:byFascia.map(r=>r.name),datasets:[{data:byFascia.map(r=>r.n),backgroundColor:pal,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}}
+  });
+  destroy('chart-over150');
+  charts['chart-over150']=new Chart(document.getElementById('chart-over150').getContext('2d'),{
+    type:'doughnut',data:{labels:['Over 150gg','<=150gg'],datasets:[{data:[(m.over150Rate*100).toFixed(1),100-(m.over150Rate*100).toFixed(1)],backgroundColor:[pal[1],cssVar('--color-surface-dynamic')],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}}}}
+  });
+  destroy('chart-anzianita');
+  charts['chart-anzianita']=new Chart(document.getElementById('chart-anzianita').getContext('2d'),{
+    type:'bar',data:{labels:['Media'],datasets:[{data:[m.anzAvg],backgroundColor:pal[0],borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.raw.toFixed(1)} mesi`}}}}
+  });
+  destroy('chart-km');
+  charts['chart-km']=new Chart(document.getElementById('chart-km').getContext('2d'),{
+    type:'bar',data:{labels:['Media'],datasets:[{data:[m.kmAvg],backgroundColor:pal[1],borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${Math.round(c.raw).toLocaleString('it')} km`}}}}
+  });
+  const byFasPrez=groupBy(filtered,'fascia_prezzo');
+  destroy('chart-fascia-prezzo');
+  charts['chart-fascia-prezzo']=new Chart(document.getElementById('chart-fascia-prezzo').getContext('2d'),{
+    type:'doughnut',data:{labels:byFasPrez.map(r=>r.name),datasets:[{data:byFasPrez.map(r=>r.n),backgroundColor:pal,borderWidth:2,borderColor:cssVar('--color-surface')} ]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'bottom'}}}}
+  });
+  const cats=[...new Set(filtered.map(r=>r.categoria))];
+  const fasce=[...new Set(filtered.map(r=>r.fascia_prezzo))];
+  const matrix=fasce.map(f=>cats.map(c=>filtered.filter(r=>r.fascia_prezzo===f && r.categoria===c).length));
+  destroy('chart-cat-prezzo');
+  charts['chart-cat-prezzo']=new Chart(document.getElementById('chart-cat-prezzo').getContext('2d'),{
+    type:'bar',data:{labels:fasce,datasets:cats.map((c,i)=>({label:c,data:matrix.map(r=>r[i]),backgroundColor:pal[i%pal.length],stack:'s'}))},options:{responsive:true,maintainAspectRatio:false,scales:{x:{stacked:true},y:{stacked:true}},plugins:{tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.raw}`}}}}
+  });
+}
+
+function renderBrand(){
+  const pal=palette();
+  const marche=[...new Set(filtered.map(r=>r.marca))].filter(Boolean).sort();
+  const filiali=[...new Set(filtered.map(r=>r.filiale))].filter(Boolean).sort();
+  const stack=filiali.map(f=>{
+    const rows=filtered.filter(r=>r.filiale===f);
+    const total=brandToggle==='volumi'?rows.length:rows.reduce((s,r)=>s+r.importo,0);
+    const by={}; marche.forEach(m=>{const r=rows.filter(x=>x.marca===m);by[m]=brandToggle==='volumi'?r.length:r.reduce((s,x)=>s+x.importo,0);});
+    return{filiale:f,total,by};
+  }).filter(d=>d.total>0);
+  destroy('chart-brand-stacked');
+  charts['chart-brand-stacked']=new Chart(document.getElementById('chart-brand-stacked').getContext('2d'),{
+    type:'bar',data:{labels:stack.map(d=>d.filiale),datasets:marche.map((m,i)=>({label:m,data:stack.map(d=>d.total?+(d.by[m]/d.total*100).toFixed(1):0),backgroundColor:pal[i%pal.length],stack:'s'}))},options:{responsive:true,maintainAspectRatio:false,scales:{x:{stacked:true},y:{stacked:true,min:0,max:100,ticks:{callback:v=>v+'%'}}}}
+  });
+  const byMarca=groupBy(filtered,'marca');
+  destroy('chart-brand-donut');
+  charts['chart-brand-donut']=new Chart(document.getElementById('chart-brand-donut').getContext('2d'),{
+    type:'doughnut',data:{labels:byMarca.map(r=>r.name),datasets:[{data:byMarca.map(r=>r.n),backgroundColor:pal,borderWidth:2,borderColor:cssVar('--color-surface')}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right'}}}}
+  });
+  const byMarcaRev=[...byMarca].sort((a,b)=>b.fatt-a.fatt);
+  destroy('chart-brand-rev');
+  charts['chart-brand-rev']=new Chart(document.getElementById('chart-brand-rev').getContext('2d'),{
+    type:'bar',data:{labels:byMarcaRev.map(r=>r.name),datasets:[{data:byMarcaRev.map(r=>r.fatt),backgroundColor:byMarcaRev.map((_,i)=>pal[i%pal.length]),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+eurShort(c.raw)}}},scales:{y:{ticks:{callback:v=>eurShort(v)}}}}
+  });
+}
+function setBrandToggle(v){brandToggle=v;document.getElementById('toggle-volumi').classList.toggle('active',v==='volumi');document.getElementById('toggle-fatturato').classList.toggle('active',v==='fatturato');renderBrand();}
+
+function renderTable(){
+  const g=groupBy(filtered,'filiale');
+  const rows=g.map(r=>({
+    filiale:r.name,n:r.n,fatt:r.fatt,marg:r.marg,ticket:r.ticket,marg_pratica:r.margPratica,marg_pct:r.margPct,fin_rate:r.finRate,ass_rate:r.assRate,gar_rate:r.garRate,sconto:r.scontoAvg
+  }));
+  const tbody=document.getElementById('detail-tbody');
+  tbody.innerHTML=rows.map(r=>`<tr><td><strong>${r.filiale}</strong></td><td class="num">${r.n.toLocaleString('it')}</td><td class="num">${eurShort(r.fatt)}</td><td class="num">${eurShort(r.marg)}</td><td class="num">${eurShort(r.ticket)}</td><td class="num">${eurShort(r.marg_pratica)}</td><td class="num">${(r.marg_pct*100).toFixed(1)}%</td><td class="num">${(r.fin_rate*100).toFixed(1)}%</td><td class="num">${(r.ass_rate*100).toFixed(1)}%</td><td class="num">${(r.gar_rate*100).toFixed(1)}%</td><td class="num">${eurShort(r.sconto)}</td></tr>`).join('');
+}
+
+function renderInsights(m){
+  const byFil=groupBy(filtered,'filiale');
+  const byMarca=groupBy(filtered,'marca');
+  const byVend=groupBy(filtered,'venditore');
+  const topMargFil=[...byFil].sort((a,b)=>b.marg-a.marg)[0];
+  const topFinFil=[...byFil].sort((a,b)=>b.finRate-a.finRate)[0];
+  const topAssMarca=[...byMarca].sort((a,b)=>b.assRate-a.assRate)[0];
+  const topVendMarg=[...byVend].sort((a,b)=>b.marg-a.marg)[0];
+  const items=[
+    topMargFil&&{icon:'🏆',text:`<strong>${topMargFil.name}</strong> è la filiale più redditizia per margine totale (${eurShort(topMargFil.marg)}).`},
+    topFinFil&&{icon:'💳',text:`<strong>${topFinFil.name}</strong> ha il tasso di finanziamento più alto (${(topFinFil.finRate*100).toFixed(1)}%).`},
+    topAssMarca&&{icon:'🛡️',text:`Il brand <strong>${topAssMarca.name}</strong> ha la maggiore penetrazione assicurativa (${(topAssMarca.assRate*100).toFixed(1)}%).`},
+    topVendMarg&&{icon:'🧑‍💼',text:`<strong>${topVendMarg.name}</strong> è il venditore con più margine generato (${eurShort(topVendMarg.marg)}).`},
+    {icon:'📈',text:`Il margine totale medio per pratica è <strong>${eurShort(m.margPratica)}</strong>, pari al ${(m.margPct*100).toFixed(1)}% del fatturato.`},
+    {icon:'🎯',text:`Lo sconto medio per pratica è <strong>${eurShort(m.scontoAvg)}</strong>, con un tasso di over150 in giacenza del ${(m.over150Rate*100).toFixed(1)}%.`}
+  ].filter(Boolean);
+  ['insights-overview','insights-filiali','insights-venditori','insights-servizi','insights-stock','insights-brand'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return; el.innerHTML=items.map(i=>`<div class="insight-item"><div class="insight-icon">${i.icon}</div><div class="insight-text">${i.text}</div></div>`).join('');
+  });
+}
+
+document.querySelectorAll('[data-section]').forEach(btn=>btn.addEventListener('click',()=>{
+  const s=btn.dataset.section;
+  document.querySelectorAll('.page-section').forEach(sec=>sec.classList.toggle('active',sec.id==='sec-'+s));
+  document.querySelectorAll('.nav-item,.mob-nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.section===s));
+}));
+['f-anno','f-quarter','f-month','f-marca','f-filiale','f-venditore','f-canale','f-cat'].forEach(id=>document.getElementById(id).addEventListener('change',applyFilters));
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  ['f-anno','f-quarter','f-month','f-marca','f-filiale','f-venditore','f-canale','f-cat'].forEach(id=>document.getElementById(id).value='');
+  applyFilters();
+});
+
+loadData();
+</script>
+</body>
+</html>
