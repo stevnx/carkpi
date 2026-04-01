@@ -38,7 +38,7 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
-body{font-family:var(--font-body);font-size:var(--text-sm);color:var(--color:text);background:var(--color-bg);min-height:100dvh;line-height:1.55}
+body{font-family:var(--font-body);font-size:var(--text-sm);color:var(--color-text);background:var(--color-bg);min-height:100dvh;line-height:1.55}
 button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 a,button{transition:color var(--transition),background var(--transition),border-color var(--transition),opacity var(--transition)}
 :focus-visible{outline:2px solid var(--color-primary);outline-offset:2px;border-radius:var(--radius-sm)}
@@ -55,22 +55,22 @@ a,button{transition:color var(--transition),background var(--transition),border-
 #retry-btn{margin-top:8px;background:var(--color-primary);color:#fff;padding:10px 28px;border-radius:var(--radius-md);font-weight:600;font-size:var(--text-sm);}
 #content{display:none}
 #theme-toggle{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-md);color:var(--color-text-muted);border:1px solid var(--color-border);margin-left:auto;}
-#theme-toggle:hover{background:var(--color-surface-offset);color:var(--color:text)}
+#theme-toggle:hover{background:var(--color-surface-offset);color:var(--color-text)}
 #header{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-4) 0;border-bottom:1px solid var(--color-divider);}
-#header .logo{display:flex;align-items:center;gap:var(--space-3);text-decoration:none;color:var(--color:text);font-weight:700;font-size:var(--text-base);letter-spacing:-0.01em}
-#header .logo svg{color:var(--color:primary)}
-#header .logo span.sub{font-weight:400;color:var(--color:text-muted);font-size:var(--text-xs);margin-left:2px}
+#header .logo{display:flex;align-items:center;gap:var(--space-3);text-decoration:none;color:var(--color-text);font-weight:700;font-size:var(--text-base);letter-spacing:-0.01em}
+#header .logo svg{color:var(--color-primary)}
+#header .logo span.sub{font-weight:400;color:var(--color-text-muted);font-size:var(--text-xs);margin-left:2px}
 #filters{display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:flex-end;margin-bottom:var(--space-6);}
 .filter-group{display:flex;flex-direction:column;gap:3px}
-.filter-group label{font-size:var(--text-xs);color:var(--color:text-muted);font-weight:500;letter-spacing:0.06em;text-transform:uppercase}
-.filter-group select{background:var(--color:surface-offset);border:1px solid var(--color:border);border-radius:var(--radius:md);padding:5px var(--space-3);font-size:var(--text-sm);color:var(--color:text);min-width:130px;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7976' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
-#btn-reset{background:none;border:1px solid var(--color:border);border-radius:var(--radius:md);padding:6px var(--space-4);font-size:var(--text-sm);color:var(--color:text-muted);font-weight:500;display:flex;align-items:center;gap:var(--space-2)}
-#btn-reset:hover{background:var(--color:surface-offset);color:var(--color:text);border-color:var(--color:primary)}
+.filter-group label{font-size:var(--text-xs);color:var(--color-text-muted);font-weight:500;letter-spacing:0.06em;text-transform:uppercase}
+.filter-group select{background:var(--color-surface-offset);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:5px var(--space-3);font-size:var(--text-sm);color:var(--color-text);min-width:130px;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7976' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+#btn-reset{background:none;border:1px solid var(--color-border);border-radius:var(--radius-md);padding:6px var(--space-4);font-size:var(--text-sm);color:var(--color-text-muted);font-weight:500;display:flex;align-items:center;gap:var(--space-2)}
+#btn-reset:hover{background:var(--color-surface-offset);color:var(--color-text);border-color:var(--color-primary)}
 #kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:var(--space-4);}
-.kpi-card{background:var(--color:surface);border:1px solid var(--color:border);border-radius:var(--radius:lg);padding:var(--space-5);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:var(--space-2)}
-.kpi-label{font-size:var(--text-xs);color:var(--color:text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.08em}
-.kpi-value{font-size:var(--text-xl);font-weight:700;color:var(--color:text);font-variant-numeric:tabular-nums lining-nums;letter-spacing:-0.02em}
-.kpi-sub{font-size:var(--text-xs);color:var(--color:text-faint)}
+.kpi-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:var(--space-2)}
+.kpi-label{font-size:var(--text-xs);color:var(--color-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.08em}
+.kpi-value{font-size:var(--text-xl);font-weight:700;color:var(--color-text);font-variant-numeric:tabular-nums lining-nums;letter-spacing:-0.02em}
+.kpi-sub{font-size:var(--text-xs);color:var(--color-text-faint)}
 .chart-wrap{position:relative;height:300px;width:100%;margin-top:var(--space-6);}
 </style>
 </head>
@@ -78,7 +78,7 @@ a,button{transition:color var(--transition),background var(--transition),border-
 <div id="loading">
   <div class="spinner"></div>
   <div class="loading-label">Caricamento dati vendite…</div>
-  <div style="font-size:var(--text-xs);color:var(--color:text-faint);margin-top:-8px;">Fonte: CSV remoto configurato in DATA_URL</div>
+  <div style="font-size:var(--text-xs);color:var(--color-text-faint);margin-top:-8px;">Fonte: CSV remoto configurato in DATA_URL</div>
 </div>
 <div id="error">
   <div style="font-size:40px;">⚠️</div>
@@ -112,8 +112,8 @@ a,button{transition:color var(--transition),background var(--transition),border-
 <script>
 // Imposta DATA_URL: per test su server locale usa "./dataset.csv"
 // Per test remoto (GitHub Pages / Perplexity) usa l'URL completo
-//const DATA_URL = "https://stevnx.github.io/carkpi/dataset_kpi_definitivo_2024_2025_50000.csv";
-const DATA_URL = "./dataset_kpi_definitivo_2024_2025_50000.csv"; // <-- decommenta questa linea e commenta quella sopra per test locali con server
+const DATA_URL = "https://stevnx.github.io/carkpi/dataset_kpi_definitivo_2024_2025_50000.csv";
+// const DATA_URL = "./dataset.csv"; // <-- decommenta questa linea e commenta quella sopra per test locali con server
 
 let rawData = [], filtered = [];
 let trendChart = null;
@@ -134,7 +134,7 @@ function cssVar(n){return getComputedStyle(document.documentElement).getProperty
 function applyChartDefaults(){
   Chart.defaults.font.family="'Inter', system-ui, sans-serif";
   Chart.defaults.font.size=11;
-  Chart.defaults.color=cssVar('--color:text-muted');
+  Chart.defaults.color=cssVar('--color-text-muted');
 }
 
 async function loadData(){
@@ -236,7 +236,7 @@ function metrics(data){
 function renderAll(){
   applyChartDefaults();
   if(!filtered.length){
-    document.getElementById('kpi-grid').innerHTML='<div style="color:var(--color:text-muted);padding:16px;">Nessun dato per i filtri selezionati.</div>';
+    document.getElementById('kpi-grid').innerHTML='<div style="color:var(--color-text-muted);padding:16px;">Nessun dato per i filtri selezionati.</div>';
     return;
   }
   const m=metrics(filtered);
@@ -276,12 +276,12 @@ function renderTrendChart(m){
   // Distrugge eventuale chart precedente
   if(trendChart){trendChart.destroy();}
   const ctx=document.getElementById('chart-trend').getContext('2d');
-  const pal=[cssVar('--color:primary'),cssVar('--color:orange')];
+  const pal=[cssVar('--color-primary'),cssVar('--color-orange')];
   trendChart=new Chart(ctx,{type:'line',data:{labels,datasets:[
     {label:'Fatturato Mensile',data:fatt,borderColor:pal[0],backgroundColor:pal[0]+'22',fill:true,tension:.35}
-  ]}},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',align:'end'},tooltip:{callbacks:{label:c=>' '+eurShort(c.raw)}}},scales:{
-    x:{grid:{color:cssVar('--color:divider')}},
-    y:{grid:{color:cssVar('--color:divider')},ticks:{callback:v=>eurShort(v)}}
+  ]}}, options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',align:'end'},tooltip:{callbacks:{label:c=>' '+eurShort(c.raw)}}},scales:{
+    x:{grid:{color:cssVar('--color-divider')}},
+    y:{grid:{color:cssVar('--color-divider')},ticks:{callback:v=>eurShort(v)}}
   }}});
 }
 
