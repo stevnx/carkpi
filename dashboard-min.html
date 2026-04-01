@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Analytics - Minimal Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+<style>
+:root, [data-theme="light"] {
+  --color-bg: #f7f6f2;
+  --color-surface: #f9f8f5;
+  --color-text: #28251d;
+  --color-text-muted: #6a6964;
+  --color-primary: #01696f;
+  --color-border: #d4d1ca;
+  --shadow-sm: 0 1px 3px rgba(40,37,29,0.07);
+  --radius-md: 8px;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --text-sm: clamp(0.8125rem, 0.77rem + 0.3vw, 0.9375rem);
+  --text-base: clamp(0.9375rem, 0.89rem + 0.25vw, 1rem);
+  --text-xl: clamp(1.25rem, 1.1rem + 0.7vw, 1.75rem);
+  --space-4: 16px;
+  --space-6: 24px;
+  --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-theme="dark"] {
+  --color-bg: #131210;
+  --color-surface: #1a1917;
+  --color-text: #d8d7d4;
+  --color-text-muted: #7a7976;
+  --color-primary: #4f98a3;
+  --color-border: #383633;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+body{font-family:var(--font-body);font-size:var(--text-sm);color:var(--color:text);background:var(--color-bg);min-height:100dvh;line-height:1.55}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
+a,button{transition:color var(--transition),background var(--transition),border-color var(--transition),opacity var(--transition)}
+:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px;border-radius:var(--radius-sm)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+
+#app-container{padding:var(--space-6)}
+#loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:var(--space-4)}
+#error{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:var(--space-4)}
+.spinner{width:40px;height:40px;border:3px solid var(--color-border);border-top-color:var(--color-primary);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-label{font-size:var(--text-sm);color:var(--color-text-muted)}
+#error-msg{font-size:var(--text-sm);color:var(--color-text-muted);text-align:center;max-width:460px;}
+#error-url{font-size:var(--text-xs);background:var(--color-surface-offset);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);color:var(--color-primary);font-family:monospace;word-break:break-all;max-width:560px;}
+#retry-btn{margin-top:8px;background:var(--color-primary);color:#fff;padding:10px 28px;border-radius:var(--radius-md);font-weight:600;font-size:var(--text-sm);}
+#content{display:none}
+#theme-toggle{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-md);color:var(--color-text-muted);border:1px solid var(--color-border);margin-left:auto;}
+#theme-toggle:hover{background:var(--color-surface-offset);color:var(--color:text)}
+#header{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-4) 0;border-bottom:1px solid var(--color-divider);}
+#header .logo{display:flex;align-items:center;gap:var(--space-3);text-decoration:none;color:var(--color:text);font-weight:700;font-size:var(--text-base);letter-spacing:-0.01em}
+#header .logo svg{color:var(--color:primary)}
+#header .logo span.sub{font-weight:400;color:var(--color:text-muted);font-size:var(--text-xs);margin-left:2px}
+#filters{display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:flex-end;margin-bottom:var(--space-6);}
+.filter-group{display:flex;flex-direction:column;gap:3px}
+.filter-group label{font-size:var(--text-xs);color:var(--color:text-muted);font-weight:500;letter-spacing:0.06em;text-transform:uppercase}
+.filter-group select{background:var(--color:surface-offset);border:1px solid var(--color:border);border-radius:var(--radius:md);padding:5px var(--space-3);font-size:var(--text-sm);color:var(--color:text);min-width:130px;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7976' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+#btn-reset{background:none;border:1px solid var(--color:border);border-radius:var(--radius:md);padding:6px var(--space-4);font-size:var(--text-sm);color:var(--color:text-muted);font-weight:500;display:flex;align-items:center;gap:var(--space-2)}
+#btn-reset:hover{background:var(--color:surface-offset);color:var(--color:text);border-color:var(--color:primary)}
+#kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:var(--space-4);}
+.kpi-card{background:var(--color:surface);border:1px solid var(--color:border);border-radius:var(--radius:lg);padding:var(--space-5);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:var(--space-2)}
+.kpi-label{font-size:var(--text-xs);color:var(--color:text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.08em}
+.kpi-value{font-size:var(--text-xl);font-weight:700;color:var(--color:text);font-variant-numeric:tabular-nums lining-nums;letter-spacing:-0.02em}
+.kpi-sub{font-size:var(--text-xs);color:var(--color:text-faint)}
+.chart-wrap{position:relative;height:300px;width:100%;margin-top:var(--space-6);}
+</style>
+</head>
+<body>
+<div id="loading">
+  <div class="spinner"></div>
+  <div class="loading-label">Caricamento dati vendite…</div>
+  <div style="font-size:var(--text-xs);color:var(--color:text-faint);margin-top:-8px;">Fonte: CSV remoto configurato in DATA_URL</div>
+</div>
+<div id="error">
+  <div style="font-size:40px;">⚠️</div>
+  <div style="font-size:var(--text-xl);font-weight:700;">Errore nel caricamento dati</div>
+  <div id="error-msg"></div>
+  <div id="error-url"></div>
+  <button id="retry-btn">Riprova</button>
+</div>
+<div id="content" style="display:none;">
+  <header id="header">
+    <div class="logo">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-label="Logo">
+        <rect width="26" height="26" rx="6" fill="currentColor" opacity="0.12"/>
+        <rect x="4" y="14" width="4" height="8" rx="1" fill="currentColor"/>
+        <rect x="11" y="9" width="4" height="13" rx="1" fill="currentColor"/>
+        <rect x="18" y="5" width="4" height="17" rx="1" fill="currentColor"/>
+        <polyline points="5,13 12,7 19,4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span>CarKPI<span class="sub">Sales &amp; Profit</span></span>
+    </div>
+    <button id="theme-toggle" aria-label="Cambia tema" data-theme-toggle></button>
+  </header>
+  <div id="filters">
+    <div class="filter-group"><label for="f-anno">Anno</label><select id="f-anno"><option value="">Tutti</option></select></div>
+    <button id="btn-reset">Reset</button>
+  </div>
+  <div id="kpi-grid"></div>
+  <div class="chart-wrap"><canvas id="chart-trend"></canvas></div>
+</div>
+
+<script>
+// Imposta DATA_URL: per test su server locale usa "./dataset.csv"
+// Per test remoto (GitHub Pages / Perplexity) usa l'URL completo
+const DATA_URL = "https://stevnx.github.io/carkpi/dataset_kpi_definitivo_2024_2025_50000.csv";
+// const DATA_URL = "./dataset.csv"; // <-- decommenta questa linea e commenta quella sopra per test locali con server
+
+let rawData = [], filtered = [];
+let trendChart = null;
+const MESI_IT = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+
+// TEMA
+(function(){
+  const t=document.querySelector('[data-theme-toggle]');
+  const r=document.documentElement;
+  function icon(mode){t.innerHTML=mode==='dark'
+    ?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+    :'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';}
+  let m=r.getAttribute('data-theme')||'dark'; icon(m);
+  t.addEventListener('click',()=>{m=m==='dark'?'light':'dark';r.setAttribute('data-theme',m);icon(m);if(filtered.length) renderAll();});
+})();
+
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function applyChartDefaults(){
+  Chart.defaults.font.family="'Inter', system-ui, sans-serif";
+  Chart.defaults.font.size=11;
+  Chart.defaults.color=cssVar('--color:text-muted');
+}
+
+async function loadData(){
+  document.getElementById('loading').style.display='flex';
+  document.getElementById('error').style.display='none';
+  document.getElementById('content').style.display='none';
+  try{
+    const resp=await fetch(DATA_URL);
+    if(!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+    const text=await resp.text();
+    const parsed=Papa.parse(text,{header:true,skipEmptyLines:true});
+    rawData=[];
+    for(const row of parsed.data){
+      try{
+        if(!row.data||row.data==='data') continue;
+        const d=new Date(row.data); if(isNaN(d.getTime())) continue;
+        const fatt=parseFloat(row.importo_fattura); if(!fatt||fatt<=0) continue;
+        rawData.push({
+          date:d,
+          anno:parseInt(row.anno)||d.getFullYear(),
+          mese:d.getMonth()+1,
+          meseAnno:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,
+          importo:fatt,
+          finanziamento:(row.finanziamento||'').trim().toUpperCase()==='SI',
+          assFlag:(row.pacchetto_assicurativo||'').trim().toUpperCase()==='SI',
+          garFlag:(row.estensione_garanzia||'').trim().toUpperCase()==='SI',
+          marg_tot:parseFloat(row.margine_totale_eur)||0
+        });
+      }catch(e){}
+    }
+    if(!rawData.length) throw new Error('Nessuna riga valida trovata nel CSV');
+    populateFilters();
+    applyFilters();
+    document.getElementById('loading').style.display='none';
+    document.getElementById('content').style.display='block';
+  }catch(e){
+    document.getElementById('loading').style.display='none';
+    document.getElementById('error').style.display='flex';
+    document.getElementById('error-msg').textContent=e.message||'Errore sconosciuto';
+    document.getElementById('error-url').textContent='DATA_URL: '+DATA_URL;
+  }
+}
+
+function populateFilters(){
+  function uniq(arr){return [...new Set(arr)].filter(Boolean).sort();}
+  const anni=uniq(rawData.map(r=>r.anno));
+  fillSel('f-anno', anni);
+}
+function fillSel(id, items){
+  const sel=document.getElementById(id); const first=sel.options[0]; sel.innerHTML=''; sel.appendChild(first);
+  for(const it of items){
+    const opt=document.createElement('option');
+    if(typeof it==='object'){opt.value=it.value;opt.textContent=it.label;} else {opt.value=it;opt.textContent=it;}
+    sel.appendChild(opt);
+  }
+}
+
+function applyFilters(){
+  const a=document.getElementById('f-anno').value;
+  filtered=rawData.filter(r=>(!a || r.anno==a));
+  const parts=[];
+  if(a) parts.push(`Anno: <span>${a}</span>`);
+  const base=`<span>${filtered.length.toLocaleString('it')}</span> pratiche (${((filtered.length/rawData.length)*100).toFixed(1)}% del totale)`;
+  // Nessun elemento #filter-summary nella minima, ma lasciamo il riferimento sicuro
+  const sumEl=document.getElementById('filter-summary');
+  if(sumEl){sumEl.innerHTML=parts.length?base+' · '+parts.join(' · '):base;}
+  renderAll();
+}
+
+function numShort(v){
+  const a=Math.abs(v);
+  if(a>=1_000_000) return (v/1_000_000).toFixed(1).replace('.',',')+'M';
+  if(a>=10_000) return (v/1_000).toFixed(1).replace('.',',')+'K';
+  return v.toLocaleString('it-IT');
+}
+function eurShort(v){return '€ '+numShort(v);}
+
+function metrics(data){
+  const n=data.length; if(!n) return null;
+  let fatt=0,marg=0,finN=0,assN=0,garN=0;
+  for(const r of data){
+    fatt+=r.importo;
+    marg+=r.marg_tot;
+    if(r.finanziamento) finN++;
+    if(r.assFlag) assN++;
+    if(r.garFlag) garN++;
+  }
+  return{
+    n,fatt,marg,
+    ticket:fatt/n,
+    margPratica:marg/n,
+    margPct:marg/fatt,
+    finRate:finN/n,
+    assRate:assN/n,
+    garRate:garN/n
+  };
+}
+
+function renderAll(){
+  applyChartDefaults();
+  if(!filtered.length){
+    document.getElementById('kpi-grid').innerHTML='<div style="color:var(--color:text-muted);padding:16px;">Nessun dato per i filtri selezionati.</div>';
+    return;
+  }
+  const m=metrics(filtered);
+  renderKPIs(m);
+  renderTrendChart(m);
+}
+
+function renderKPIs(m){
+  const el=document.getElementById('kpi-grid');
+  const cards=[
+    {lbl:'Pratiche',val:m.n.toLocaleString('it'),sub:'nel periodo filtrato'},
+    {lbl:'Fatturato',val:eurShort(m.fatt),sub:'somma importi fattura'},
+    {lbl:'Margine Totale',val:eurShort(m.marg),sub:'margine totale'},
+    {lbl:'% Margine/Fatt',val:(m.margPct*100).toFixed(1)+'%',sub:'redditività media'},
+    {lbl:'Ticket Medio',val:eurShort(m.ticket),sub:'fatturato per pratica'},
+    {lbl:'Margine Medio',val:eurShort(m.margPratica),sub:'per pratica'},
+    {lbl:'Tasso Finanziamento',val:(m.finRate*100).toFixed(1)+'%',sub:`${(m.finRate*m.n).toFixed(0)} pratiche finanziate`},
+    {lbl:'Pen. Assicurazioni',val:(m.assRate*100).toFixed(1)+'%',sub:`${(m.assRate*m.n).toFixed(0)} pratiche`},
+    {lbl:'Pen. Est. Garanzia',val:(m.garRate*100).toFixed(1)+'%',sub:`${(m.garRate*m.n).toFixed(0)} pratiche`}
+  ];
+  el.innerHTML=cards.map(c=>`<div class="kpi-card">
+    <div class="kpi-label">${c.lbl}</div>
+    <div class="kpi-value">${c.val}</div>
+    <div class="kpi-sub">${c.sub||''}</div>
+  </div>`).join('');
+}
+
+function renderTrendChart(m){
+  const by={};
+  for(const r of filtered){
+    const k=r.meseAnno; if(!by[k]) by[k]={fatt:0,n:0};
+    by[k].fatt+=r.importo; by[k].n++;
+  }
+  const entries=Object.entries(by).sort((a,b)=>a[0].localeCompare(b[0]));
+  const labels=entries.map(([k])=>{const[y,m]=k.split('-');return MESI_IT[+m-1]+' '+y;});
+  const fatt=entries.map(([,v])=>v.fatt);
+  // Distrugge eventuale chart precedente
+  if(trendChart){trendChart.destroy();}
+  const ctx=document.getElementById('chart-trend').getContext('2d');
+  const pal=[cssVar('--color:primary'),cssVar('--color:orange')];
+  trendChart=new Chart(ctx,{type:'line',data:{labels,datasets:[
+    {label:'Fatturato Mensile',data:fatt,borderColor:pal[0],backgroundColor:pal[0]+'22',fill:true,tension:.35}
+  ]}},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',align:'end'},tooltip:{callbacks:{label:c=>' '+eurShort(c.raw)}}},scales:{
+    x:{grid:{color:cssVar('--color:divider')}},
+    y:{grid:{color:cssVar('--color:divider')},ticks:{callback:v=>eurShort(v)}}
+  }}});
+}
+
+// Filtri e reset
+['f-anno'].forEach(id=>document.getElementById(id).addEventListener('change',applyFilters));
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  document.getElementById('f-anno').value='';
+  applyFilters();
+});
+
+// Avvio
+loadData();
+</script>
+</body>
+</html>
