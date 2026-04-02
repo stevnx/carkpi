@@ -833,6 +833,11 @@
           Finance & Assicurazioni
           <span class="tab-badge">F&I</span>
         </button>
+        <button class="tab" data-tab="stock" type="button">
+          <span class="dot"></span>
+          Stock
+        <span class="tab-badge">Aging</span>
+</button>
       </nav>
     </div>
 
@@ -1100,7 +1105,132 @@
               </div>
               <span class="chip-pill pill-success">Warranty</span>
             </div>
-            <div class="chart-container">
+            
+<!-- TAB STOCK -->
+<div class="tab-panel" id="tab-stock">
+  <div class="kpi-grid" style="margin-bottom:10px;">
+    <div class="kpi-card secondary">
+      <div class="kpi-label">Giacenza media alla vendita</div>
+      <div class="kpi-value" id="stockGiacenzaMedia">–</div>
+      <div class="kpi-sub">Media giacenza_giorni</div>
+    </div>
+    <div class="kpi-card secondary">
+      <div class="kpi-label">% over 150 giorni</div>
+      <div class="kpi-value" id="stockPercOver150">–</div>
+      <div class="kpi-sub">Quota vendite con over150_flag = SI</div>
+    </div>
+    <div class="kpi-card secondary">
+      <div class="kpi-label">Anzianità media veicolo</div>
+      <div class="kpi-value" id="stockAnzianitaMedia">–</div>
+      <div class="kpi-sub">Media anzianita_mesi</div>
+    </div>
+    <div class="kpi-card secondary">
+      <div class="kpi-label">Km medi alla vendita</div>
+      <div class="kpi-value" id="stockKmMedi">–</div>
+      <div class="kpi-sub">Media km_attuali</div>
+    </div>
+    <div class="kpi-card secondary">
+      <div class="kpi-label">Sconto medio</div>
+      <div class="kpi-value" id="stockScontoMedio">–</div>
+      <div class="kpi-sub">Media sconto_applicato_eur</div>
+    </div>
+    <div class="kpi-card secondary">
+      <div class="kpi-label">Canale principale</div>
+      <div class="kpi-value" id="stockCanaleTop">–</div>
+      <div class="kpi-sub">Canale più frequente nel filtro</div>
+    </div>
+  </div>
+
+  <div class="panel-grid-3">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Giacenza fascia</div>
+          <div class="card-subtitle">Distribuzione giacenza_fascia</div>
+        </div>
+        <span class="chip-pill pill-warning">Aging</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="chartStockGiacenzaFascia"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Canale</div>
+          <div class="card-subtitle">Vendite per canale</div>
+        </div>
+        <span class="chip-pill">Channel</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="chartStockCanale"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Fascia prezzo</div>
+          <div class="card-subtitle">Giacenza media per fascia_prezzo</div>
+        </div>
+        <span class="chip-pill">Price band</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="chartStockFasciaPrezzo"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-grid" style="margin-top:12px;">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Marca</div>
+          <div class="card-subtitle">% over150 per marca</div>
+        </div>
+        <span class="chip-pill pill-danger">Risk</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="chartStockMarcaOver150"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Dettaglio marca-modello</div>
+          <div class="card-subtitle">Vendite, aging, km e sconti</div>
+        </div>
+        <span class="chip-pill pill-success">Detail</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Marca</th>
+              <th>Modello</th>
+              <th>Vendite</th>
+              <th>Giacenza media</th>
+              <th>% Over150</th>
+              <th>Anzianità media</th>
+              <th>Km medi</th>
+              <th>Sconto medio</th>
+            </tr>
+          </thead>
+          <tbody id="tableStockBody">
+            <!-- Popolata via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+            
+            <div class="chart-container">              
               <canvas id="chartEstensione"></canvas>
             </div>
           </div>
