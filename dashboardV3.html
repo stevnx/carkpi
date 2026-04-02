@@ -1405,28 +1405,27 @@
     };
   }
 
-  function aggregateMonthly(data) {
-    const map = new Map();
-    data.forEach(r => {
-      if (!r.dataObj) return;
-      const key = `${r.anno}-${String(r.mese).padStart(2, '0')}`;
-      if (!map.has(key)) {
-        map.set(key, { pratiche: 0, fatturato: 0, margine: 0 });
-      }
-      const obj = map.get(key);
-      obj.pratiche += 1;
-      obj.fatturato += r.importo_fattura;
-      obj.margine += r.margine_totale_eur;
-    });
+function aggregateMonthly(data) {
+  const map = new Map();
+  data.forEach(r => {
+    if (!r.dataObj) return;
+    const key = `${r.anno}-${String(r.mese).padStart(2, '0')}`;
+    if (!map.has(key)) {
+      map.set(key, { pratiche: 0, fatturato: 0, margine: 0 });
+    }
+    const obj = map.get(key);
+    obj.pratiche += 1;
+    obj.fatturato += r.importo_fattura;
+    obj.margine += r.margine_totale_eur;
+  });
 
-    const entries = Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
-    const labels = entries.map(([k]) => k);
-    const pratiche = entries.map(([, v]) => v.pratiche);
-    thead
-    const fatturato = entries.map(([, v]) => v.fatturato);
-    const margine = entries.map(([, v]) => v.margine);
-    return { labels, pratiche, fatturato, margine };
-  }
+  const entries = Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  const labels = entries.map(([k]) => k);
+  const pratiche = entries.map(([, v]) => v.pratiche);
+  const fatturato = entries.map(([, v]) => v.fatturato);
+  const margine = entries.map(([, v]) => v.margine);
+  return { labels, pratiche, fatturato, margine };
+}
 
   function aggregateByFiliale(data) {
     const map = new Map();
