@@ -1624,18 +1624,25 @@ function aggregateTipoProdFI(data) {
   };
 }
 
-  function aggregateIstitutoFin(data) {
-    const map = new Map();
-    data.forEach(r => {
-      const key = r.istituto_finanziario || 'N/A';
-      map.set(key, (map.get(key) || 0) + 1);
-    });
-    const entries = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-    return {
-      labels: entries.map(([k]) => k),
-      values: entries.map(([, v]) => v)
-    };
-  }
+function aggregateIstitutoFin(data) {
+  const map = new Map();
+
+  data.forEach(r => {
+    if (!r.finanziamentoSI) return;
+
+    const key = (r.istituto_finanziario || '').trim();
+    if (!key) return;
+
+    map.set(key, (map.get(key) || 0) + 1);
+  });
+
+  const entries = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+
+  return {
+    labels: entries.map(([k]) => k),
+    values: entries.map(([, v]) => v)
+  };
+}
 
   function aggregateDurataBins(data) {
     const bins = [
