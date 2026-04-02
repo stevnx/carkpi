@@ -1478,6 +1478,8 @@
     updateVenditoriViews();
     updateFinanceKPIs();
     updateFinanceCharts();
+    updateStockKPIs();
+    updateStockCharts();
   }
 
   [filterAnno, filterQuarter, filterMese, filterFiliale, filterMarca, filterCategoria].forEach(sel => {
@@ -1803,6 +1805,223 @@ function aggregateIstitutoFin(data) {
     };
   }
 
+function aggregateStock(data) {
+  let giacenzaSum = 0, giacenzaCount = 0;
+  let anzianitaSum = 0, anzianitaCount = 0;
+  let kmSum = 0, kmCount = 0;
+  let scontoSum = 0, scontoCount = 0;
+  let over150Count = 0;
+
+  const canaleMap = new Map();
+
+  data.forEach(r => {
+    if (!isNaN(r.giacenza_giorni)) {
+      giacenzaSum += r.giacenza_giorni;
+      giacenzaCount++;
+    }
+    if (!isNaN(r.anzianita_mesi)) {
+      anzianitaSum += r.anzianita_mesi;
+      anzianitaCount++;
+    }
+    if (!isNaN(r.km_attuali)) {
+      kmSum += r.km_attuali;
+      kmCount++;
+    }
+    if (!isNaN(r.sconto_applicato_eur_raw)) {
+      scontoSum += r.sconto_applicato_eur_raw;
+      scontoCount++;
+    }
+    if (r.over150SI) over150Count++;
+
+    const canale = (r.canale || '').trim();
+    if (canale) {
+      canaleMap.set(canale, (canaleMap.get(canale) || 0) + 1);
+    }
+  });
+
+  const total = data.length || 1;
+  const topCanaleEntry = Array.from(canaleMap.entries()).sort((a, b) => b[1] - a[1])[0];
+
+  return {
+    giacenzaMedia: giacenzaCount ? giacenzaSum / giacenzaCount : 0,
+    percOver150: total ? (over150Count / total) * 100 : 0,
+    anzianitaMedia: anzianitaCount ? anzianitaSum / anzianitaCount : 0,
+    kmMedi: kmCount ? kmSum / kmCount : 0,
+    scontoMedio: scontoCount ? scontoSum / scontoCount : 0,
+    canaleTop: topCanaleEntry ? topCanaleEntry[0] : '–'
+  };
+}
+
+function aggregateStockGiacenzaFascia(data) {
+  const order = ['0-30', '31-60', '61-90', '91-120', '121-150', '150+','1-90','91-150'];
+  const map = new Map();
+
+  data.forEach(r => {
+    const key = (r.giacenza_fascia || '').trim();
+    if (!key) return;
+    map.set(key, (map.get(key) || 0) + 1);
+  });
+
+  let entries = Array.from(map.entries());
+
+  entries.sort((a, b) => {
+    const ia = order.indexOf(a[0]);
+    const ib = order.indexOf(b[0]);
+    if (ia === -1 && ib === -1) return a[0].localeCompare(b[0]);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+
+  return {
+    labels: entries.map(([k]) => k),
+    values: entries.map(([, v]) => v)
+  };
+}
+
+function aggregateStockCanale(data) {
+  const map = new Map();
+
+  data.forEach(r => {
+    const key = (r.canale || '').trim();
+    if (!key) return;
+    map.set(key, (map.get(key) || 0) + 1);
+  });
+
+  const entries = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+
+  return {
+    labels: entries.map(([k]) => k),
+    values: entries.map(([, v]) => v)
+  };
+}
+
+function aggregateStockFasciaPrezzo(data) {
+  const map = new Map();
+
+  data.forEach(r => {
+    const key = (r.fascia_prezzo || '').trim();
+    if (!key) return;
+
+    if (!map.has(key)) {
+      map.set(key, { giacenzaSum: 0, giacenzaCount: 0 });
+    }
+
+    const obj = map.get(key);
+    if (!isNaN(r.giacenza_giorni)) {
+      obj.giacenzaSum += r.giacenza_giorni;
+      obj.giacenzaCount++;
+    }
+  });
+
+  const entries = Array.from(map.entries()).map(([k, v]) => ({
+    key: k,
+    value: v.giacenzaCount ? v.giacenzaSum / v.giacenzaCount : 0
+  }));
+
+  entries.sort((a, b) => a.key.localeCompare(b.key));
+
+  return {
+    labels: entries.map(e => e.key),
+    values: entries.map(e => e.value)
+  };
+}
+
+function aggregateStockMarcaOver150(data) {
+  const map = new Map();
+
+  data.forEach(r => {
+    const key = (r.marca || '').trim();
+    if (!key) return;
+
+    if (!map.has(key)) {
+      map.set(key, { total: 0, over150: 0 });
+    }
+
+    const obj = map.get(key);
+    obj.total += 1;
+    if (r.over150SI) obj.over150 += 1;
+  });
+
+  const entries = Array.from(map.entries()).map(([k, v]) => ({
+    key: k,
+    perc: v.total ? (v.over150 / v.total) * 100 : 0,
+    total: v.total
+  }));
+
+  entries.sort((a, b) => b.perc - a.perc);
+
+  const top = entries.slice(0, 10);
+
+  return {
+    labels: top.map(e => e.key),
+    values: top.map(e => e.perc)
+  };
+}
+
+function aggregateStockTable(data) {
+  const map = new Map();
+
+  data.forEach(r => {
+    const marca = (r.marca || '').trim();
+    const modello = (r.modello || '').trim();
+    const key = `${marca}|||${modello}`;
+    if (!marca && !modello) return;
+
+    if (!map.has(key)) {
+      map.set(key, {
+        marca,
+        modello,
+        vendite: 0,
+        giacenzaSum: 0,
+        giacenzaCount: 0,
+        over150: 0,
+        anzianitaSum: 0,
+        anzianitaCount: 0,
+        kmSum: 0,
+        kmCount: 0,
+        scontoSum: 0,
+        scontoCount: 0
+      });
+    }
+
+    const obj = map.get(key);
+    obj.vendite += 1;
+
+    if (!isNaN(r.giacenza_giorni)) {
+      obj.giacenzaSum += r.giacenza_giorni;
+      obj.giacenzaCount++;
+    }
+    if (r.over150SI) obj.over150 += 1;
+    if (!isNaN(r.anzianita_mesi)) {
+      obj.anzianitaSum += r.anzianita_mesi;
+      obj.anzianitaCount++;
+    }
+    if (!isNaN(r.km_attuali)) {
+      obj.kmSum += r.km_attuali;
+      obj.kmCount++;
+    }
+    if (!isNaN(r.sconto_applicato_eur_raw)) {
+      obj.scontoSum += r.sconto_applicato_eur_raw;
+      obj.scontoCount++;
+    }
+  });
+
+  const arr = Array.from(map.values()).map(r => ({
+    marca: r.marca,
+    modello: r.modello,
+    vendite: r.vendite,
+    giacenzaMedia: r.giacenzaCount ? r.giacenzaSum / r.giacenzaCount : 0,
+    percOver150: r.vendite ? (r.over150 / r.vendite) * 100 : 0,
+    anzianitaMedia: r.anzianitaCount ? r.anzianitaSum / r.anzianitaCount : 0,
+    kmMedi: r.kmCount ? r.kmSum / r.kmCount : 0,
+    scontoMedio: r.scontoCount ? r.scontoSum / r.scontoCount : 0
+  }));
+
+  arr.sort((a, b) => b.vendite - a.vendite);
+  return arr.slice(0, 50);
+}
+  
   // Update UI: KPIs
   function updateOverviewKPIs() {
     const kpi = aggregateOverview(filteredData);
@@ -2271,14 +2490,130 @@ function aggregateIstitutoFin(data) {
     });
   }
 
-  function refreshAllCharts() {
-    if (!filteredData.length) return;
-    updateOverviewCharts();
-    updateFilialiViews();
-    updateVenditoriViews();
-    updateFinanceKPIs();
-    updateFinanceCharts();
-  }
+function updateStockKPIs() {
+  const kpi = aggregateStock(filteredData);
+
+  document.getElementById('stockGiacenzaMedia').textContent = formatNumber(kpi.giacenzaMedia, 1);
+  document.getElementById('stockPercOver150').textContent = formatPercent(kpi.percOver150);
+  document.getElementById('stockAnzianitaMedia').textContent = formatNumber(kpi.anzianitaMedia, 1);
+  document.getElementById('stockKmMedi').textContent = formatCompact(kpi.kmMedi);
+  document.getElementById('stockScontoMedio').textContent = formatNumber(kpi.scontoMedio, 0) + '€';
+  document.getElementById('stockCanaleTop').textContent = kpi.canaleTop;
+}
+
+function updateStockCharts() {
+  const fasce = aggregateStockGiacenzaFascia(filteredData);
+  const canali = aggregateStockCanale(filteredData);
+  const fascePrezzo = aggregateStockFasciaPrezzo(filteredData);
+  const marcaOver150 = aggregateStockMarcaOver150(filteredData);
+  const tableData = aggregateStockTable(filteredData);
+
+  const tbody = document.getElementById('tableStockBody');
+  tbody.innerHTML = '';
+  tableData.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.marca}</td>
+      <td>${row.modello}</td>
+      <td>${formatNumber(row.vendite, 0)}</td>
+      <td>${formatNumber(row.giacenzaMedia, 1)}</td>
+      <td>${formatPercent(row.percOver150)}</td>
+      <td>${formatNumber(row.anzianitaMedia, 1)}</td>
+      <td>${formatCompact(row.kmMedi)}</td>
+      <td>${formatNumber(row.scontoMedio, 0)}€</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const ctxFasce = document.getElementById('chartStockGiacenzaFascia').getContext('2d');
+  destroyChart(chartStockGiacenzaFascia);
+  chartStockGiacenzaFascia = new Chart(ctxFasce, {
+    type: 'bar',
+    data: {
+      labels: fasce.labels,
+      datasets: [{
+        label: 'Vendite',
+        data: fasce.values,
+        backgroundColor: '#f97316',
+        borderRadius: 6,
+        maxBarThickness: 38
+      }]
+    },
+    options: {
+      ...baseChartOptions()
+    }
+  });
+
+  const ctxCanale = document.getElementById('chartStockCanale').getContext('2d');
+  destroyChart(chartStockCanale);
+  chartStockCanale = new Chart(ctxCanale, {
+    type: 'bar',
+    data: {
+      labels: canali.labels,
+      datasets: [{
+        label: 'Vendite',
+        data: canali.values,
+        backgroundColor: '#3b82f6',
+        borderRadius: 6,
+        maxBarThickness: 38
+      }]
+    },
+    options: {
+      ...baseChartOptions()
+    }
+  });
+
+  const ctxPrezzo = document.getElementById('chartStockFasciaPrezzo').getContext('2d');
+  destroyChart(chartStockFasciaPrezzo);
+  chartStockFasciaPrezzo = new Chart(ctxPrezzo, {
+    type: 'bar',
+    data: {
+      labels: fascePrezzo.labels,
+      datasets: [{
+        label: 'Giacenza media',
+        data: fascePrezzo.values,
+        backgroundColor: '#22c55e',
+        borderRadius: 6,
+        maxBarThickness: 38
+      }]
+    },
+    options: {
+      ...baseChartOptions()
+    }
+  });
+
+  const ctxMarca = document.getElementById('chartStockMarcaOver150').getContext('2d');
+  destroyChart(chartStockMarcaOver150);
+  chartStockMarcaOver150 = new Chart(ctxMarca, {
+    type: 'bar',
+    data: {
+      labels: marcaOver150.labels,
+      datasets: [{
+        label: '% Over150',
+        data: marcaOver150.values,
+        backgroundColor: '#ef4444',
+        borderRadius: 6,
+        maxBarThickness: 28
+      }]
+    },
+    options: {
+      ...baseChartOptions(),
+      indexAxis: 'y'
+    }
+  });
+}
+
+  
+function refreshAllCharts() {
+  if (!filteredData.length) return;
+  updateOverviewCharts();
+  updateFilialiViews();
+  updateVenditoriViews();
+  updateFinanceKPIs();
+  updateFinanceCharts();
+  updateStockKPIs();
+  updateStockCharts();
+}
 
   // CSV load
   function enrichRow(row) {
@@ -2334,6 +2669,8 @@ function aggregateIstitutoFin(data) {
         updateVenditoriViews();
         updateFinanceKPIs();
         updateFinanceCharts();
+        updateStockKPIs();
+        updateStockCharts();
 
         loadingBanner.style.display = 'none';
         errorBanner.style.display = 'none';
