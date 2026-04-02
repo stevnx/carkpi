@@ -1598,18 +1598,31 @@ function aggregateMonthly(data) {
     };
   }
 
-  function aggregateTipoProdFI(data) {
-    const map = new Map();
-    data.forEach(r => {
-      const key = r.tipo_prodotto_fi || 'N/A';
-      map.set(key, (map.get(key) || 0) + 1);
-    });
-    const entries = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-    return {
-      labels: entries.map(([k]) => k),
-      values: entries.map(([, v]) => v)
-    };
-  }
+function aggregateTipoProdFI(data) {
+  const map = new Map();
+
+  data.forEach(r => {
+    const hasFIServices =
+      r.finanziamentoSI ||
+      r.pacchettoSI ||
+      r.estensioneSI ||
+      (r.tipo_prodotto_fi && String(r.tipo_prodotto_fi).trim() !== '');
+
+    if (!hasFIServices) return;
+
+    const key = (r.tipo_prodotto_fi || '').trim();
+    if (!key) return;
+
+    map.set(key, (map.get(key) || 0) + 1);
+  });
+
+  const entries = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+
+  return {
+    labels: entries.map(([k]) => k),
+    values: entries.map(([, v]) => v)
+  };
+}
 
   function aggregateIstitutoFin(data) {
     const map = new Map();
