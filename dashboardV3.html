@@ -1252,11 +1252,11 @@
   let rawData = [];
   let enrichedData = [];
   let filteredData = [];
-
-  // Chart instances
+  
   let chartTrend, chartFilialiOverview, chartMixMarca, chartCategoria, chartFinMix;
   let chartFilialiMain, chartVenditoriMain;
   let chartTipoProdFI, chartIstitutoFin, chartDurataFin, chartPacchetto, chartEstensione;
+  let chartStockGiacenzaFascia, chartStockCanale, chartStockFasciaPrezzo, chartStockMarcaOver150;
 
   // Utility date helpers
   function parseISODate(str) {
@@ -1364,7 +1364,8 @@
     overview: document.getElementById('tab-overview'),
     filiali: document.getElementById('tab-filiali'),
     venditori: document.getElementById('tab-venditori'),
-    finance: document.getElementById('tab-finance')
+    finance: document.getElementById('tab-finance'),
+    stock: document.getElementById('tab-stock')
   };
 
   tabButtons.forEach(btn => {
@@ -2305,7 +2306,14 @@ function aggregateIstitutoFin(data) {
       durata_mesi: safeFloat(row.durata_mesi),
       finanziamentoSI: isYes(row.finanziamento),
       pacchettoSI: isYes(row.pacchetto_assicurativo),
-      estensioneSI: isYes(row.estensione_garanzia)
+      estensioneSI: isYes(row.estensione_garanzia),
+      anzianita_mesi: safeFloat(row.anzianita_mesi),
+      km_attuali: safeFloat(row.km_attuali),
+      canale: row.canale || '',
+      giacenza_fascia: row.giacenza_fascia || '',
+      over150SI: isYes(row.over150_flag),
+      fascia_prezzo: row.fascia_prezzo || '',
+      modello: row.modello || ''
     };
   }
 
